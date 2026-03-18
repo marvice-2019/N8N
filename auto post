@@ -1,1 +1,872 @@
-
+{
+  "name": "Marvice & Conxyou - Lead Gen, Blog & Engagement Campaign",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0,
+              "field": "cronExpression",
+              "expression": "0 8 * * 1,2,3,4,5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Campaign Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300],
+      "notes": "Triggers every weekday (Mon-Fri) at 8:00 AM."
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [220, 520],
+      "notes": "Use this to manually trigger the campaign workflow on demand."
+    },
+    {
+      "parameters": {
+        "url": "https://trends.google.com/trends/api/dailytrends?hl=en-US&tz=-480&geo=US&hs=2&i=15&ns=15",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "fetch-google-trends",
+      "name": "Fetch Google Trends",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 140],
+      "notes": "Fetches daily trending topics from Google Trends."
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=artificial+intelligence+AI+updates+2026&hl=en-US&gl=US&ceid=US:en",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "fetch-ai-news",
+      "name": "Fetch AI & Tech News (RSS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "notes": "Fetches latest AI news, updates, tools, and breakthroughs from Google News RSS."
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=digital+marketing+trends+SEO+social+media+marketing&hl=en-US&gl=US&ceid=US:en",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "fetch-marketing-news",
+      "name": "Fetch Digital Marketing News (RSS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 460],
+      "notes": "Fetches latest digital marketing, SEO, social media marketing, and advertising trends."
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=web+development+frontend+backend+javascript+react&hl=en-US&gl=US&ceid=US:en",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "fetch-webdev-news",
+      "name": "Fetch Web Development News (RSS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 620],
+      "notes": "Fetches latest web development, frontend, backend, JavaScript, React, and coding trends."
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=corporate+gifting+business+gifts+employee+engagement&hl=en-US&gl=US&ceid=US:en",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "fetch-gifting-news",
+      "name": "Fetch Corporate Gifting News (RSS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 780],
+      "notes": "Fetches latest corporate gifting, business gifts, employee engagement, and promotional product trends."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate and parse all content sources into a unified trending topics list\nconst allInputs = $input.all();\nconst allTopics = [];\n\nconst categories = ['google_trends', 'ai_tech', 'digital_marketing', 'web_development', 'corporate_gifting'];\nconst categoryLabels = {\n  'google_trends': 'General Trends',\n  'ai_tech': 'AI & Technology',\n  'digital_marketing': 'Digital Marketing',\n  'web_development': 'Web Development',\n  'corporate_gifting': 'Corporate Gifting'\n};\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const rawData = allInputs[i].json.data || allInputs[i].json.body || '';\n  let text = typeof rawData === 'string' ? rawData : JSON.stringify(rawData);\n  const category = categories[i] || 'general';\n  \n  if (category === 'google_trends') {\n    if (text.startsWith(')]}')) text = text.substring(5);\n    try {\n      const parsed = JSON.parse(text);\n      const days = parsed?.default?.trendingSearchesDays || [];\n      for (const day of days) {\n        for (const trend of (day.trendingSearches || []).slice(0, 3)) {\n          allTopics.push({\n            title: trend.title?.query || '',\n            snippet: trend.articles?.[0]?.snippet || '',\n            source: trend.articles?.[0]?.source || 'Google Trends',\n            category: categoryLabels[category],\n            traffic: trend.formattedTraffic || ''\n          });\n        }\n      }\n    } catch(e) {}\n  } else {\n    const itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\n    let match;\n    let count = 0;\n    while ((match = itemRegex.exec(text)) !== null && count < 3) {\n      const itemXml = match[1];\n      const titleMatch = itemXml.match(/<title><!\\[CDATA\\[(.+?)\\]\\]><\\/title>/) || itemXml.match(/<title>(.+?)<\\/title>/);\n      const descMatch = itemXml.match(/<description><!\\[CDATA\\[(.+?)\\]\\]><\\/description>/) || itemXml.match(/<description>(.+?)<\\/description>/);\n      const sourceMatch = itemXml.match(/<source[^>]*>(.+?)<\\/source>/);\n      const pubDateMatch = itemXml.match(/<pubDate>(.+?)<\\/pubDate>/);\n      \n      if (titleMatch) {\n        allTopics.push({\n          title: titleMatch[1].replace(/<[^>]+>/g, '').trim(),\n          snippet: descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim().substring(0, 200) : '',\n          source: sourceMatch ? sourceMatch[1] : 'Google News',\n          category: categoryLabels[category],\n          pubDate: pubDateMatch ? pubDateMatch[1] : ''\n        });\n        count++;\n      }\n    }\n  }\n}\n\nreturn [{\n  json: {\n    trends: allTopics.slice(0, 15),\n    categories_covered: Object.values(categoryLabels),\n    fetchedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-trends",
+      "name": "Aggregate Multi-Niche Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 460],
+      "notes": "Aggregates trending topics from all 5 sources into a unified list."
+    },
+    {
+      "parameters": {
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a lead-generation strategist managing TWO brands: (1) MARVICE — provides AI & Technology solutions, Digital Marketing & SEO, and Web Development services. (2) CONXYOU — specializes in Corporate Gifting, business gifts, and employee engagement products. BRAND RULES: If the selected topic is Corporate Gifting → use brand_name 'Conxyou'. If the selected topic is AI & Technology or Digital Marketing → SOMETIMES mention Marvice (not every time, vary it — some posts are pure value, some are branded). If Web Development → use Marvice. Your goal: select the ONE topic with highest engagement and lead-gen potential across all niches. Return a JSON object with: selected_topic, content_niche (one of: AI & Technology, Digital Marketing, Web Development, Corporate Gifting, Marketing Updates), brand_name (Marvice or Conxyou based on niche rules), mention_brand (true or false — for AI/Marketing niches randomly set false sometimes for pure value posts), why_trending, target_audience, campaign_angle, hashtags (array of 10 niche-specific hashtags), mood_keywords (array of 5 words), key_takeaway (one sentence insight), lead_hook (compelling CTA to contact or visit page), and blog_title (SEO-friendly blog title for a detailed article on this topic).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze these trending topics and pick the best one for today's campaign. Categories covered: {{ JSON.stringify($json.categories_covered) }}. Topics: {{ JSON.stringify($json.trends) }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ai-trend-analysis",
+      "name": "AI Trend Analysis (Perplexity)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 300],
+      "notes": "Selects best topic for lead-gen. Returns brand_name (Marvice or Conxyou) and mention_brand flag. Requires Perplexity API key."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI analysis response\nconst response = $input.first().json;\nlet analysisText = '';\n\nif (response.choices && response.choices[0]) {\n  analysisText = response.choices[0].message?.content || '';\n} else if (response.body) {\n  analysisText = typeof response.body === 'string' ? response.body : JSON.stringify(response.body);\n}\n\nlet analysis = {};\n\ntry {\n  const jsonMatch = analysisText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    analysis = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  analysis = {\n    selected_topic: 'AI-Powered Digital Marketing Strategies for 2026',\n    content_niche: 'Digital Marketing',\n    brand_name: 'Marvice',\n    mention_brand: false,\n    why_trending: 'AI tools are transforming how businesses run marketing campaigns',\n    target_audience: 'Business owners, startups, marketers, and decision-makers',\n    campaign_angle: 'How AI is reshaping digital marketing ROI in 2026',\n    hashtags: ['#DigitalMarketing', '#AIMarketing', '#MarketingTrends', '#SEO2026', '#ContentMarketing', '#SocialMediaMarketing', '#GrowthHacking', '#MarketingStrategy', '#AITools', '#BusinessGrowth'],\n    mood_keywords: ['professional', 'vibrant', 'data-driven', 'modern', 'trustworthy'],\n    key_takeaway: 'AI-powered marketing tools are delivering 3x better engagement rates',\n    lead_hook: 'DM us or visit our page for a free consultation',\n    blog_title: 'AI-Powered Digital Marketing: The Complete Strategy Guide for 2026'\n  };\n}\n\n// Enforce brand rules\nif (analysis.content_niche === 'Corporate Gifting') {\n  analysis.brand_name = 'Conxyou';\n  analysis.mention_brand = true;\n} else if (!analysis.brand_name) {\n  analysis.brand_name = 'Marvice';\n}\n\nreturn [{\n  json: {\n    ...analysis,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-analysis",
+      "name": "Parse AI Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 300],
+      "notes": "Parses analysis and enforces brand rules: Conxyou for Gifting, Marvice for others."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.8,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a social media content creator and blog writer managing TWO brands: MARVICE (AI solutions, Digital Marketing, Web Development) and CONXYOU (Corporate Gifting, business gifts, employee engagement). BRANDING RULES: 1) If brand_name is 'Conxyou' → always mention Conxyou in every post. 2) If brand_name is 'Marvice' AND mention_brand is false → write pure value content WITHOUT mentioning any brand name. Just provide insights, tips, and value. The CTA should be generic like 'Follow for more insights' or 'Save this post'. 3) If brand_name is 'Marvice' AND mention_brand is true → mention Marvice naturally 1-2 times. CONTENT STYLE: Not overly informative or dry. Make it engaging, conversational, scroll-stopping. Use stories, analogies, surprising stats. POSTER CTA: Every post must include a line encouraging comments like 'Comment below to get the detailed blog on this topic' or 'Drop a comment and we will send you the full breakdown'. Return a JSON object with keys: linkedin_post (thought-leadership, 200-300 words, bold hook, 3 bullet points, CTA + comment prompt for blog details), instagram_caption (scroll-stopping hook, emojis, 150 words max, value tips, CTA: save/follow/comment for blog, hashtags at end), facebook_post (conversational, 150-200 words, pain point opener, engagement question + comment for blog CTA), pinterest_description (SEO-rich, 100 words, niche keywords for discoverability), poster_prompt (DALL-E prompt for professional poster - clean corporate design, brand colors: deep blue/white/gold for Marvice or warm tones for Conxyou, modern aesthetic, NO text on image), blog_content (full SEO-optimized blog post, 800-1200 words, with H2/H3 headings in HTML, intro paragraph, 3-5 sections with actionable insights, conclusion with CTA, internal linking placeholders like [LINK], meta_description of 155 chars max at the start wrapped in a meta tag comment).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create social media content and a full blog post for:\\nBrand: {{ $json.brand_name }}\\nMention Brand: {{ $json.mention_brand }}\\nContent Niche: {{ $json.content_niche }}\\nTopic: {{ $json.selected_topic }}\\nBlog Title: {{ $json.blog_title }}\\nKey Takeaway: {{ $json.key_takeaway }}\\nLead Hook: {{ $json.lead_hook }}\\nAngle: {{ $json.campaign_angle }}\\nTarget Audience: {{ $json.target_audience }}\\nHashtags: {{ JSON.stringify($json.hashtags) }}\\nMood: {{ JSON.stringify($json.mood_keywords) }}\\nWhy Trending: {{ $json.why_trending }}\\n\\nREMEMBER: Follow the branding rules strictly. Every social post must include a comment prompt like 'Comment to get the full blog breakdown on this topic'. Blog content must be ready for WordPress publishing.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "generate-content",
+      "name": "Generate Platform Content (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 300],
+      "notes": "Generates platform content + full blog post. Brand logic: Conxyou for Gifting, Marvice sometimes for AI/Marketing, pure value otherwise."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the generated content\nconst response = $input.first().json;\nlet contentText = '';\n\nif (response.choices && response.choices[0]) {\n  contentText = response.choices[0].message?.content || '';\n} else if (response.message?.content) {\n  contentText = response.message.content;\n}\n\nlet content = {};\ntry {\n  const jsonMatch = contentText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    content = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  content = {\n    linkedin_post: contentText,\n    instagram_caption: contentText.substring(0, 500),\n    facebook_post: contentText.substring(0, 600),\n    pinterest_description: contentText.substring(0, 300),\n    poster_prompt: 'A modern, professional social media campaign poster with bold typography, gradient background in blue and white tones, featuring abstract geometric shapes and clean design elements.',\n    blog_content: '<h2>' + ($('Parse AI Analysis').first().json.blog_title || 'Blog Post') + '</h2><p>' + contentText.substring(0, 1000) + '</p>'\n  };\n}\n\nreturn [{ json: content }];"
+      },
+      "id": "parse-content",
+      "name": "Parse Generated Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 300],
+      "notes": "Extracts platform content, poster prompt, and blog_content from the AI response."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{ $json.poster_prompt }}\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"quality\": \"hd\",\n  \"style\": \"vivid\"\n}",
+        "options": {}
+      },
+      "id": "generate-poster",
+      "name": "Design Poster (DALL-E 3)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1800, 100],
+      "notes": "Generates campaign poster using DALL-E 3. Uses same HTTP Header Auth credential as content generation."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract poster URL and prepare for upload\nconst posterData = $input.first().json;\nlet imageUrl = '';\n\nif (posterData.data && posterData.data[0]) {\n  imageUrl = posterData.data[0].url || '';\n} else if (posterData.url) {\n  imageUrl = posterData.url;\n}\n\nconst content = $('Parse Generated Content').first().json;\nconst analysis = $('Parse AI Analysis').first().json;\n\nreturn [{\n  json: {\n    imageUrl: imageUrl,\n    linkedin_post: content.linkedin_post || '',\n    instagram_caption: content.instagram_caption || '',\n    facebook_post: content.facebook_post || '',\n    pinterest_description: content.pinterest_description || '',\n    blog_content: content.blog_content || '',\n    poster_prompt: content.poster_prompt || '',\n    brand_name: analysis.brand_name || 'Marvice',\n    blog_title: analysis.blog_title || analysis.selected_topic || '',\n    content_niche: analysis.content_niche || '',\n    generatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "prepare-poster-data",
+      "name": "Prepare Poster & Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2020, 100],
+      "notes": "Combines poster URL with platform content, blog content, and brand info."
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-poster",
+      "name": "Download Poster Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2240, 100],
+      "notes": "Downloads the generated poster image as binary data."
+    },
+    {
+      "parameters": {
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.IMGBB_API_KEY }}"
+            },
+            {
+              "name": "image",
+              "value": "={{ $binary.data.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "upload-to-imgbb",
+      "name": "Upload to ImgBB (Image Host)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2460, 100],
+      "notes": "Uploads poster to ImgBB for a persistent URL. Set IMGBB_API_KEY env variable."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare hosted image URL for all platforms\nconst imgbbResponse = $input.first().json;\nconst hostedImageUrl = imgbbResponse?.data?.url || imgbbResponse?.data?.display_url || $('Prepare Poster & Content').first().json.imageUrl;\nconst content = $('Prepare Poster & Content').first().json;\n\nreturn [{\n  json: {\n    imageUrl: hostedImageUrl,\n    linkedin_post: content.linkedin_post,\n    instagram_caption: content.instagram_caption,\n    facebook_post: content.facebook_post,\n    pinterest_description: content.pinterest_description,\n    blog_content: content.blog_content,\n    blog_title: content.blog_title,\n    brand_name: content.brand_name,\n    content_niche: content.content_niche,\n    generatedAt: content.generatedAt\n  }\n}];"
+      },
+      "id": "prepare-for-posting",
+      "name": "Prepare for Multi-Platform Posting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2680, 100],
+      "notes": "Combines hosted image URL with all platform content, blog content, and brand info for parallel posting."
+    },
+    {
+      "parameters": {
+        "postAs": "person",
+        "text": "={{ $json.linkedin_post }}",
+        "shareMediaCategory": "IMAGE",
+        "mediaUrl": "={{ $json.imageUrl }}",
+        "additionalFields": {
+          "visibility": "PUBLIC"
+        }
+      },
+      "id": "post-linkedin",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [2960, -100],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "LINKEDIN_CREDENTIAL_ID",
+          "name": "LinkedIn OAuth2"
+        }
+      },
+      "notes": "Posts to LinkedIn with campaign poster. Requires LinkedIn OAuth2 with w_member_social scope."
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_BUSINESS_ACCOUNT_ID }}/media",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.imageUrl }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.instagram_caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-instagram-container",
+      "name": "Create Instagram Media Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2960, 80],
+      "notes": "Step 1 of Instagram posting: Creates media container via Instagram Graph API."
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_BUSINESS_ACCOUNT_ID }}/media_publish",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-instagram",
+      "name": "Publish to Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3200, 80],
+      "notes": "Step 2 of Instagram posting: Publishes the media container."
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.FACEBOOK_PAGE_ID }}/photos",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $('Prepare for Multi-Platform Posting').first().json.facebook_post }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_PAGE_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "post-facebook",
+      "name": "Post to Facebook Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2960, 260],
+      "notes": "Posts campaign poster and content to Facebook Page."
+    },
+    {
+      "parameters": {
+        "url": "https://api.pinterest.com/v5/pins",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"board_id\": \"{{ $env.PINTEREST_BOARD_ID }}\",\n  \"media_source\": {\n    \"source_type\": \"image_url\",\n    \"url\": \"{{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\"\n  },\n  \"title\": \"{{ $('Parse AI Analysis').first().json.brand_name }} | {{ $('Parse AI Analysis').first().json.selected_topic }}\",\n  \"description\": \"{{ $('Prepare for Multi-Platform Posting').first().json.pinterest_description }}\",\n  \"alt_text\": \"{{ $('Parse AI Analysis').first().json.brand_name }} campaign poster - {{ $('Parse AI Analysis').first().json.selected_topic }}\"\n}",
+        "options": {}
+      },
+      "id": "post-pinterest",
+      "name": "Post to Pinterest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2960, 440],
+      "notes": "Creates a Pin with dynamic brand name (Marvice or Conxyou). Set PINTEREST_BOARD_ID env variable."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect results from all platform postings\nconst analysis = $('Parse AI Analysis').first().json;\nconst content = $('Prepare for Multi-Platform Posting').first().json;\n\nconst results = {\n  campaign_summary: {\n    brand: analysis.brand_name || 'Marvice',\n    topic: analysis.selected_topic || 'N/A',\n    content_niche: analysis.content_niche || 'General',\n    campaign_angle: analysis.campaign_angle || 'N/A',\n    key_takeaway: analysis.key_takeaway || '',\n    lead_hook: analysis.lead_hook || '',\n    blog_title: analysis.blog_title || '',\n    blog_content: content.blog_content || '',\n    poster_generated: true,\n    platforms_posted: ['LinkedIn', 'Instagram', 'Facebook', 'Pinterest'],\n    imageUrl: content.imageUrl || '',\n    timestamp: new Date().toISOString()\n  }\n};\n\nreturn [{ json: results }];"
+      },
+      "id": "campaign-summary",
+      "name": "Campaign Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3440, 260],
+      "notes": "Aggregates results with dynamic brand (Marvice or Conxyou) and blog content."
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "spreadsheetId",
+              "value": "={{ $env.CAMPAIGN_LOG_SPREADSHEET_ID }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-sheet-id",
+      "name": "Set Google Sheet ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3660, 260],
+      "notes": "Sets the Google Sheets spreadsheet ID. Set CAMPAIGN_LOG_SPREADSHEET_ID env variable."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "={{ $json.spreadsheetId }}",
+        "sheetName": "Campaign Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $('Campaign Summary').first().json.campaign_summary.timestamp }}",
+            "Brand": "={{ $('Campaign Summary').first().json.campaign_summary.brand }}",
+            "Content Niche": "={{ $('Campaign Summary').first().json.campaign_summary.content_niche }}",
+            "Topic": "={{ $('Campaign Summary').first().json.campaign_summary.topic }}",
+            "Campaign Angle": "={{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}",
+            "Key Takeaway": "={{ $('Campaign Summary').first().json.campaign_summary.key_takeaway }}",
+            "Lead Hook / CTA": "={{ $('Campaign Summary').first().json.campaign_summary.lead_hook }}",
+            "Blog Title": "={{ $('Campaign Summary').first().json.campaign_summary.blog_title }}",
+            "Platforms": "={{ $('Campaign Summary').first().json.campaign_summary.platforms_posted.join(', ') }}",
+            "Poster URL": "={{ $('Campaign Summary').first().json.campaign_summary.imageUrl }}",
+            "Blog Published": "Yes",
+            "Status": "Published",
+            "Leads Generated": "0"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-to-sheets",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3880, 160],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      },
+      "notes": "Logs campaign with dynamic Brand (Marvice/Conxyou), Blog Title, Blog Published status. Columns: Date, Brand, Content Niche, Topic, Campaign Angle, Key Takeaway, Lead Hook / CTA, Blog Title, Platforms, Poster URL, Blog Published, Status, Leads Generated."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WORDPRESS_URL }}/wp-json/wp/v2/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $('Campaign Summary').first().json.campaign_summary.blog_title }}\",\n  \"content\": \"{{ $('Campaign Summary').first().json.campaign_summary.blog_content }}\",\n  \"status\": \"publish\",\n  \"featured_media\": 0,\n  \"categories\": [],\n  \"tags\": [],\n  \"meta\": {},\n  \"excerpt\": \"{{ $('Campaign Summary').first().json.campaign_summary.key_takeaway }}\"\n}",
+        "options": {}
+      },
+      "id": "publish-to-wordpress",
+      "name": "Publish Blog to WordPress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3880, 360],
+      "notes": "Auto-publishes blog post to WordPress. Set WORDPRESS_URL env variable (e.g. https://yourdomain.com). Create HTTP Header Auth with Authorization: Basic base64(username:app_password). WordPress Application Password required."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendgrid.com/v3/mail/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"personalizations\": [\n    {\n      \"to\": [\n        {\n          \"email\": \"{{ $env.NOTIFICATION_EMAIL }}\"\n        }\n      ],\n      \"subject\": \"Campaign Published: {{ $('Campaign Summary').first().json.campaign_summary.brand }} - {{ $('Campaign Summary').first().json.campaign_summary.topic }}\"\n    }\n  ],\n  \"from\": {\n    \"email\": \"{{ $env.FROM_EMAIL }}\",\n    \"name\": \"Campaign Bot\"\n  },\n  \"content\": [\n    {\n      \"type\": \"text/html\",\n      \"value\": \"<h2>{{ $('Campaign Summary').first().json.campaign_summary.brand }} Campaign Published!</h2><hr><p><strong>Niche:</strong> {{ $('Campaign Summary').first().json.campaign_summary.content_niche }}</p><p><strong>Topic:</strong> {{ $('Campaign Summary').first().json.campaign_summary.topic }}</p><p><strong>Angle:</strong> {{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}</p><p><strong>Key Takeaway:</strong> {{ $('Campaign Summary').first().json.campaign_summary.key_takeaway }}</p><p><strong>Lead Hook:</strong> {{ $('Campaign Summary').first().json.campaign_summary.lead_hook }}</p><p><strong>Blog Title:</strong> {{ $('Campaign Summary').first().json.campaign_summary.blog_title }}</p><p><strong>Platforms:</strong> LinkedIn, Instagram, Facebook, Pinterest</p><p><strong>Poster:</strong> <a href='{{ $('Campaign Summary').first().json.campaign_summary.imageUrl }}'>View Poster</a></p><p><strong>Blog:</strong> Auto-published to WordPress</p><hr><p>Track leads in the Google Sheet!</p>\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "email-notification",
+      "name": "Email Notification (SendGrid)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3880, 540],
+      "notes": "Sends email notification when campaign is published. Set env vars: NOTIFICATION_EMAIL (recipient), FROM_EMAIL (verified sender). Create HTTP Header Auth: Authorization: Bearer SG.your-sendgrid-api-key. Alternative: use n8n's built-in Send Email node with SMTP."
+    }
+  ],
+  "connections": {
+    "Campaign Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Google Trends",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch AI & Tech News (RSS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Digital Marketing News (RSS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Web Development News (RSS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Corporate Gifting News (RSS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Google Trends",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch AI & Tech News (RSS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Digital Marketing News (RSS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Web Development News (RSS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Corporate Gifting News (RSS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Google Trends": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Multi-Niche Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch AI & Tech News (RSS)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Multi-Niche Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Digital Marketing News (RSS)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Multi-Niche Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Web Development News (RSS)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Multi-Niche Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Corporate Gifting News (RSS)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Multi-Niche Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Multi-Niche Trends": {
+      "main": [
+        [
+          {
+            "node": "AI Trend Analysis (Perplexity)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Trend Analysis (Perplexity)": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Generate Platform Content (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Platform Content (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse Generated Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Generated Content": {
+      "main": [
+        [
+          {
+            "node": "Design Poster (DALL-E 3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Design Poster (DALL-E 3)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Poster & Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Poster & Content": {
+      "main": [
+        [
+          {
+            "node": "Download Poster Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Poster Image": {
+      "main": [
+        [
+          {
+            "node": "Upload to ImgBB (Image Host)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to ImgBB (Image Host)": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Multi-Platform Posting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Multi-Platform Posting": {
+      "main": [
+        [
+          {
+            "node": "Post to LinkedIn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Instagram Media Container",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Facebook Page",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Pinterest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Instagram Media Container": {
+      "main": [
+        [
+          {
+            "node": "Publish to Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Instagram": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Facebook Page": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Pinterest": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Summary": {
+      "main": [
+        [
+          {
+            "node": "Set Google Sheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Google Sheet ID": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Publish Blog to WordPress",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Notification (SendGrid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Social Media",
+      "id": "1"
+    },
+    {
+      "name": "Campaign Automation",
+      "id": "2"
+    },
+    {
+      "name": "AI & Technology",
+      "id": "3"
+    },
+    {
+      "name": "Digital Marketing",
+      "id": "4"
+    },
+    {
+      "name": "Web Development",
+      "id": "5"
+    },
+    {
+      "name": "Corporate Gifting",
+      "id": "6"
+    },
+    {
+      "name": "WordPress Blog",
+      "id": "7"
+    },
+    {
+      "name": "Lead Generation",
+      "id": "8"
+    }
+  ],
+  "pinData": {}
+}
