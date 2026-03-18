@@ -89,35 +89,21 @@
     },
     {
       "parameters": {
-        "model": "gpt-4o",
-        "messages": {
-          "values": [
-            {
-              "role": "system",
-              "content": "You are an expert social media content creator. Generate platform-specific posts for a social media campaign. Return a JSON object with keys: linkedin_post (professional tone, 200-300 words with line breaks), instagram_caption (engaging with emojis, 150 words max), facebook_post (conversational, 150-200 words), pinterest_description (SEO-rich, 100 words max with keywords), poster_prompt (detailed DALL-E prompt for creating a visually stunning campaign poster, include style, colors, composition, and text overlay instructions)."
-            },
-            {
-              "role": "user",
-              "content": "=Create social media campaign content for:\nTopic: {{ $json.selected_topic }}\nAngle: {{ $json.campaign_angle }}\nTarget Audience: {{ $json.target_audience }}\nHashtags: {{ JSON.stringify($json.hashtags) }}\nMood: {{ JSON.stringify($json.mood_keywords) }}\nWhy Trending: {{ $json.why_trending }}"
-            }
-          ]
-        },
-        "options": {
-          "temperature": 0.8
-        }
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.8,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert social media content creator. Generate platform-specific posts for a social media campaign. Return a JSON object with keys: linkedin_post (professional tone, 200-300 words with line breaks), instagram_caption (engaging with emojis, 150 words max), facebook_post (conversational, 150-200 words), pinterest_description (SEO-rich, 100 words max with keywords), poster_prompt (detailed DALL-E prompt for creating a visually stunning campaign poster, include style, colors, composition, and text overlay instructions).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create social media campaign content for:\\nTopic: {{ $json.selected_topic }}\\nAngle: {{ $json.campaign_angle }}\\nTarget Audience: {{ $json.target_audience }}\\nHashtags: {{ JSON.stringify($json.hashtags) }}\\nMood: {{ JSON.stringify($json.mood_keywords) }}\\nWhy Trending: {{ $json.why_trending }}\"\n    }\n  ]\n}",
+        "options": {}
       },
       "id": "generate-content",
       "name": "Generate Platform Content (OpenAI)",
-      "type": "n8n-nodes-base.openAi",
-      "typeVersion": 1.8,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1360, 300],
-      "credentials": {
-        "openAiApi": {
-          "id": "OPENAI_CREDENTIAL_ID",
-          "name": "OpenAI API"
-        }
-      },
-      "notes": "Generates tailored content for each social media platform plus a DALL-E prompt for poster design. Requires OpenAI API credentials."
+      "notes": "Generates tailored content for each social media platform plus a DALL-E prompt for poster design. Uses HTTP Request to call OpenAI API directly. Create an HTTP Header Auth credential with Name: Authorization, Value: Bearer sk-your-openai-key."
     },
     {
       "parameters": {
@@ -132,28 +118,21 @@
     },
     {
       "parameters": {
-        "resource": "image",
-        "operation": "generate",
-        "model": "dall-e-3",
-        "prompt": "={{ $json.poster_prompt }}",
-        "options": {
-          "size": "1024x1024",
-          "quality": "hd",
-          "style": "vivid"
-        }
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{ $json.poster_prompt }}\",\n  \"n\": 1,\n  \"size\": \"1024x1024\",\n  \"quality\": \"hd\",\n  \"style\": \"vivid\"\n}",
+        "options": {}
       },
       "id": "generate-poster",
       "name": "Design Poster (DALL-E 3)",
-      "type": "n8n-nodes-base.openAi",
-      "typeVersion": 1.8,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1800, 100],
-      "credentials": {
-        "openAiApi": {
-          "id": "OPENAI_CREDENTIAL_ID",
-          "name": "OpenAI API"
-        }
-      },
-      "notes": "Generates a campaign poster using DALL-E 3 based on the AI-crafted prompt. Output is 1024x1024 HD quality."
+      "notes": "Generates a campaign poster using DALL-E 3 via direct HTTP Request to OpenAI Images API. Output is 1024x1024 HD quality. Uses same HTTP Header Auth credential as the content generation node (Authorization: Bearer sk-your-openai-key)."
     },
     {
       "parameters": {
