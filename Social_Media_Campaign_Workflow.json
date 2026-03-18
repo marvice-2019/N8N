@@ -1,0 +1,690 @@
+{
+  "name": "Social Media Campaign - Trending Topics, Poster Design & Auto Post",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0,
+              "field": "cronExpression",
+              "expression": "0 8 * * 1,3,5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Campaign Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300],
+      "notes": "Triggers every Monday, Wednesday, Friday at 8:00 AM. Adjust the cron expression for your preferred posting schedule."
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [220, 520],
+      "notes": "Use this to manually trigger the campaign workflow on demand."
+    },
+    {
+      "parameters": {
+        "url": "https://trends.google.com/trends/api/dailytrends?hl=en-US&tz=-480&geo=US&hs=2&i=15&ns=15",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "fetch-google-trends",
+      "name": "Fetch Google Trends",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "notes": "Fetches daily trending topics from Google Trends API. Adjust geo parameter for different countries (US, GB, IN, etc.)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Google Trends response and extract trending topics\nconst rawData = $input.first().json.data || $input.first().json.body || '';\nlet trendsText = typeof rawData === 'string' ? rawData : JSON.stringify(rawData);\n\n// Google Trends API returns with a prefix that needs removal\nif (trendsText.startsWith(')]}')) {\n  trendsText = trendsText.substring(5);\n}\n\nlet trendingTopics = [];\n\ntry {\n  const parsed = JSON.parse(trendsText);\n  const dailyTrends = parsed?.default?.trendingSearchesDays || [];\n  \n  for (const day of dailyTrends) {\n    for (const trend of (day.trendingSearches || [])) {\n      trendingTopics.push({\n        title: trend.title?.query || '',\n        traffic: trend.formattedTraffic || '',\n        relatedQueries: (trend.relatedQueries || []).map(q => q.query).join(', '),\n        source: trend.articles?.[0]?.source || '',\n        snippet: trend.articles?.[0]?.snippet || '',\n        imageUrl: trend.image?.imageUrl || ''\n      });\n    }\n  }\n} catch (e) {\n  // Fallback: use raw text as context for AI\n  trendingTopics = [{ title: 'General trending topics', rawContext: trendsText.substring(0, 2000) }];\n}\n\n// Take top 5 trending topics\nconst topTrends = trendingTopics.slice(0, 5);\n\nreturn [{ json: { trends: topTrends, fetchedAt: new Date().toISOString() } }];"
+      },
+      "id": "parse-trends",
+      "name": "Parse Trending Topics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "notes": "Parses the Google Trends API response and extracts the top 5 trending topics with metadata."
+    },
+    {
+      "parameters": {
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a social media trend analyst. Analyze the given trending topics and select the ONE most engaging topic for a social media marketing campaign. Return a JSON object with: selected_topic, why_trending, target_audience, campaign_angle, hashtags (array of 10), and mood_keywords (array of 5 words describing the visual mood for poster design).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze these trending topics and pick the best one for a social media campaign: {{ JSON.stringify($json.trends) }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ai-trend-analysis",
+      "name": "AI Trend Analysis (Perplexity)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 300],
+      "notes": "Uses Perplexity AI to analyze trending topics and select the best one for a campaign. Requires Perplexity API key in HTTP Header Auth credential (Authorization: Bearer pplx-xxx)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI analysis response\nconst response = $input.first().json;\nlet analysisText = '';\n\nif (response.choices && response.choices[0]) {\n  analysisText = response.choices[0].message?.content || '';\n} else if (response.body) {\n  analysisText = typeof response.body === 'string' ? response.body : JSON.stringify(response.body);\n}\n\nlet analysis = {};\n\ntry {\n  // Extract JSON from the response\n  const jsonMatch = analysisText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    analysis = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  analysis = {\n    selected_topic: 'AI Innovation in Daily Life',\n    why_trending: 'AI tools becoming mainstream in everyday tasks',\n    target_audience: 'Tech-savvy professionals and entrepreneurs',\n    campaign_angle: 'How AI simplifies your daily workflow',\n    hashtags: ['#AILife', '#TechTrends', '#Innovation', '#FutureOfWork', '#SmartLiving', '#AITools', '#ProductivityHacks', '#DigitalTransformation', '#TechInnovation', '#Trending'],\n    mood_keywords: ['futuristic', 'vibrant', 'clean', 'inspiring', 'dynamic']\n  };\n}\n\nreturn [{\n  json: {\n    ...analysis,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-analysis",
+      "name": "Parse AI Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 300],
+      "notes": "Extracts structured campaign data from the AI analysis response."
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert social media content creator. Generate platform-specific posts for a social media campaign. Return a JSON object with keys: linkedin_post (professional tone, 200-300 words with line breaks), instagram_caption (engaging with emojis, 150 words max), facebook_post (conversational, 150-200 words), pinterest_description (SEO-rich, 100 words max with keywords), poster_prompt (detailed DALL-E prompt for creating a visually stunning campaign poster, include style, colors, composition, and text overlay instructions)."
+            },
+            {
+              "role": "user",
+              "content": "=Create social media campaign content for:\nTopic: {{ $json.selected_topic }}\nAngle: {{ $json.campaign_angle }}\nTarget Audience: {{ $json.target_audience }}\nHashtags: {{ JSON.stringify($json.hashtags) }}\nMood: {{ JSON.stringify($json.mood_keywords) }}\nWhy Trending: {{ $json.why_trending }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.8
+        }
+      },
+      "id": "generate-content",
+      "name": "Generate Platform Content (OpenAI)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.8,
+      "position": [1360, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      },
+      "notes": "Generates tailored content for each social media platform plus a DALL-E prompt for poster design. Requires OpenAI API credentials."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the generated content\nconst response = $input.first().json;\nlet contentText = '';\n\nif (response.choices && response.choices[0]) {\n  contentText = response.choices[0].message?.content || '';\n} else if (response.message?.content) {\n  contentText = response.message.content;\n}\n\nlet content = {};\ntry {\n  const jsonMatch = contentText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    content = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  content = {\n    linkedin_post: contentText,\n    instagram_caption: contentText.substring(0, 500),\n    facebook_post: contentText.substring(0, 600),\n    pinterest_description: contentText.substring(0, 300),\n    poster_prompt: 'A modern, professional social media campaign poster with bold typography, gradient background in blue and purple tones, featuring abstract geometric shapes and clean design elements.'\n  };\n}\n\nreturn [{ json: content }];"
+      },
+      "id": "parse-content",
+      "name": "Parse Generated Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 300],
+      "notes": "Extracts platform-specific content and poster prompt from the AI response."
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "generate",
+        "model": "dall-e-3",
+        "prompt": "={{ $json.poster_prompt }}",
+        "options": {
+          "size": "1024x1024",
+          "quality": "hd",
+          "style": "vivid"
+        }
+      },
+      "id": "generate-poster",
+      "name": "Design Poster (DALL-E 3)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.8,
+      "position": [1800, 100],
+      "credentials": {
+        "openAiApi": {
+          "id": "OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      },
+      "notes": "Generates a campaign poster using DALL-E 3 based on the AI-crafted prompt. Output is 1024x1024 HD quality."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract poster URL and prepare for upload\nconst posterData = $input.first().json;\nlet imageUrl = '';\n\nif (posterData.data && posterData.data[0]) {\n  imageUrl = posterData.data[0].url || '';\n} else if (posterData.url) {\n  imageUrl = posterData.url;\n}\n\n// Get content from previous node\nconst content = $('Parse Generated Content').first().json;\n\nreturn [{\n  json: {\n    imageUrl: imageUrl,\n    linkedin_post: content.linkedin_post || '',\n    instagram_caption: content.instagram_caption || '',\n    facebook_post: content.facebook_post || '',\n    pinterest_description: content.pinterest_description || '',\n    poster_prompt: content.poster_prompt || '',\n    generatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "prepare-poster-data",
+      "name": "Prepare Poster & Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2020, 100],
+      "notes": "Combines poster URL with platform content for downstream posting nodes."
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-poster",
+      "name": "Download Poster Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2240, 100],
+      "notes": "Downloads the generated poster image as binary data for uploading to social platforms."
+    },
+    {
+      "parameters": {
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.IMGBB_API_KEY }}"
+            },
+            {
+              "name": "image",
+              "value": "={{ $binary.data.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "upload-to-imgbb",
+      "name": "Upload to ImgBB (Image Host)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2460, 100],
+      "notes": "Uploads the poster to ImgBB for a persistent URL. Required for platforms that need a public image URL. Set IMGBB_API_KEY environment variable."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare hosted image URL for all platforms\nconst imgbbResponse = $input.first().json;\nconst hostedImageUrl = imgbbResponse?.data?.url || imgbbResponse?.data?.display_url || $('Prepare Poster & Content').first().json.imageUrl;\nconst content = $('Prepare Poster & Content').first().json;\n\nreturn [{\n  json: {\n    imageUrl: hostedImageUrl,\n    linkedin_post: content.linkedin_post,\n    instagram_caption: content.instagram_caption,\n    facebook_post: content.facebook_post,\n    pinterest_description: content.pinterest_description,\n    generatedAt: content.generatedAt\n  }\n}];"
+      },
+      "id": "prepare-for-posting",
+      "name": "Prepare for Multi-Platform Posting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2680, 100],
+      "notes": "Combines hosted image URL with all platform content for parallel posting."
+    },
+    {
+      "parameters": {
+        "postAs": "person",
+        "text": "={{ $json.linkedin_post }}",
+        "shareMediaCategory": "IMAGE",
+        "mediaUrl": "={{ $json.imageUrl }}",
+        "additionalFields": {
+          "visibility": "PUBLIC"
+        }
+      },
+      "id": "post-linkedin",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [2960, -100],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "LINKEDIN_CREDENTIAL_ID",
+          "name": "LinkedIn OAuth2"
+        }
+      },
+      "notes": "Posts to LinkedIn with the campaign poster and professional content. Requires LinkedIn OAuth2 credentials with w_member_social scope."
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_BUSINESS_ACCOUNT_ID }}/media",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.imageUrl }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.instagram_caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-instagram-container",
+      "name": "Create Instagram Media Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2960, 80],
+      "notes": "Step 1 of Instagram posting: Creates a media container via the Instagram Graph API. Requires a Facebook/Instagram Business account and access token."
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_BUSINESS_ACCOUNT_ID }}/media_publish",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-instagram",
+      "name": "Publish to Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3200, 80],
+      "notes": "Step 2 of Instagram posting: Publishes the media container to Instagram."
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.FACEBOOK_PAGE_ID }}/photos",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $('Prepare for Multi-Platform Posting').first().json.facebook_post }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_PAGE_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "post-facebook",
+      "name": "Post to Facebook Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2960, 260],
+      "notes": "Posts the campaign poster and content to a Facebook Page. Requires Facebook Page access token with pages_manage_posts permission."
+    },
+    {
+      "parameters": {
+        "url": "https://api.pinterest.com/v5/pins",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"board_id\": \"{{ $env.PINTEREST_BOARD_ID }}\",\n  \"media_source\": {\n    \"source_type\": \"image_url\",\n    \"url\": \"{{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\"\n  },\n  \"title\": \"{{ $('Parse AI Analysis').first().json.selected_topic }}\",\n  \"description\": \"{{ $('Prepare for Multi-Platform Posting').first().json.pinterest_description }}\",\n  \"alt_text\": \"Campaign poster for {{ $('Parse AI Analysis').first().json.selected_topic }}\"\n}",
+        "options": {}
+      },
+      "id": "post-pinterest",
+      "name": "Post to Pinterest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2960, 440],
+      "notes": "Creates a Pin on Pinterest with the campaign poster. Requires Pinterest API access token and board ID. Set PINTEREST_BOARD_ID env variable."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect results from all platform postings\nconst results = {\n  campaign_summary: {\n    topic: $('Parse AI Analysis').first().json.selected_topic || 'N/A',\n    campaign_angle: $('Parse AI Analysis').first().json.campaign_angle || 'N/A',\n    poster_generated: true,\n    platforms_posted: ['LinkedIn', 'Instagram', 'Facebook', 'Pinterest'],\n    timestamp: new Date().toISOString()\n  }\n};\n\nreturn [{ json: results }];"
+      },
+      "id": "campaign-summary",
+      "name": "Campaign Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3440, 260],
+      "notes": "Aggregates results from all platform postings into a campaign summary."
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "spreadsheetId",
+              "value": "={{ $env.CAMPAIGN_LOG_SPREADSHEET_ID }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-sheet-id",
+      "name": "Set Google Sheet ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3660, 260],
+      "notes": "Sets the Google Sheets spreadsheet ID for campaign logging. Set CAMPAIGN_LOG_SPREADSHEET_ID env variable."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "={{ $json.spreadsheetId }}",
+        "sheetName": "Campaign Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $('Campaign Summary').first().json.campaign_summary.timestamp }}",
+            "Topic": "={{ $('Campaign Summary').first().json.campaign_summary.topic }}",
+            "Campaign Angle": "={{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}",
+            "Platforms": "={{ $('Campaign Summary').first().json.campaign_summary.platforms_posted.join(', ') }}",
+            "Poster URL": "={{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}",
+            "Status": "Published"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-to-sheets",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3880, 260],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      },
+      "notes": "Logs campaign details to a Google Sheet for tracking and analytics. Create a sheet with columns: Date, Topic, Campaign Angle, Platforms, Poster URL, Status."
+    },
+    {
+      "parameters": {
+        "url": "=https://hooks.slack.com/services/{{ $env.SLACK_WEBHOOK_PATH }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"Campaign Published!\\nTopic: {{ $('Campaign Summary').first().json.campaign_summary.topic }}\\nAngle: {{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}\\nPlatforms: LinkedIn, Instagram, Facebook, Pinterest\\nPoster: {{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\"\n}",
+        "options": {}
+      },
+      "id": "slack-notification",
+      "name": "Slack Notification (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4100, 260],
+      "notes": "Sends a Slack notification when the campaign is published. Optional - set SLACK_WEBHOOK_PATH env variable or remove this node."
+    }
+  ],
+  "connections": {
+    "Campaign Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Google Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Google Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Google Trends": {
+      "main": [
+        [
+          {
+            "node": "Parse Trending Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Trending Topics": {
+      "main": [
+        [
+          {
+            "node": "AI Trend Analysis (Perplexity)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Trend Analysis (Perplexity)": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Generate Platform Content (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Platform Content (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse Generated Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Generated Content": {
+      "main": [
+        [
+          {
+            "node": "Design Poster (DALL-E 3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Design Poster (DALL-E 3)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Poster & Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Poster & Content": {
+      "main": [
+        [
+          {
+            "node": "Download Poster Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Poster Image": {
+      "main": [
+        [
+          {
+            "node": "Upload to ImgBB (Image Host)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to ImgBB (Image Host)": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Multi-Platform Posting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Multi-Platform Posting": {
+      "main": [
+        [
+          {
+            "node": "Post to LinkedIn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Instagram Media Container",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Facebook Page",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to Pinterest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Instagram Media Container": {
+      "main": [
+        [
+          {
+            "node": "Publish to Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Instagram": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Facebook Page": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to Pinterest": {
+      "main": [
+        [
+          {
+            "node": "Campaign Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Summary": {
+      "main": [
+        [
+          {
+            "node": "Set Google Sheet ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Google Sheet ID": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Social Media",
+      "id": "1"
+    },
+    {
+      "name": "Campaign Automation",
+      "id": "2"
+    },
+    {
+      "name": "AI Content",
+      "id": "3"
+    }
+  ],
+  "pinData": {}
+}
