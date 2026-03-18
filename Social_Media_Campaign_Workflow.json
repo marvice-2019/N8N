@@ -1,5 +1,5 @@
 {
-  "name": "Social Media Campaign - AI, Marketing, Web Dev, Corporate Gifting & Auto Post",
+  "name": "Marvice - Lead Gen & Engagement Campaign (AI, Marketing, Web Dev, Gifting)",
   "nodes": [
     {
       "parameters": {
@@ -138,7 +138,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a multi-niche social media trend analyst specializing in: (1) AI & Technology updates, (2) Digital Marketing & SEO, (3) Web Development & coding, (4) Corporate Gifting & business gifts, and (5) General marketing trends. Analyze the given trending topics across these niches and select the ONE most engaging topic for today's social media campaign. Rotate between niches for variety. Return a JSON object with: selected_topic, content_niche (one of: AI & Technology, Digital Marketing, Web Development, Corporate Gifting, Marketing Updates), why_trending, target_audience, campaign_angle, hashtags (array of 10 niche-specific hashtags), mood_keywords (array of 5 words describing the visual mood for poster design), and key_takeaway (one sentence summary of the insight).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze these trending topics from multiple niches and pick the best one for today's social media campaign. Categories covered: {{ JSON.stringify($json.categories_covered) }}. Topics: {{ JSON.stringify($json.trends) }}\"\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are the lead-generation strategist for MARVICE, a company that provides services in AI & Technology solutions, Digital Marketing & SEO, Web Development, and Corporate Gifting. Your goal is to select trending topics that will: (1) position Marvice as a thought leader, (2) drive maximum engagement (likes, comments, shares, saves), and (3) generate inbound leads for Marvice services. Analyze the given trending topics and select the ONE topic that has the highest lead-gen and engagement potential for Marvice. Rotate between niches for variety. Return a JSON object with: selected_topic, content_niche (one of: AI & Technology, Digital Marketing, Web Development, Corporate Gifting, Marketing Updates), why_trending, target_audience, campaign_angle (frame it so Marvice appears as the expert/solution provider), hashtags (array of 10 niche-specific hashtags plus #Marvice), mood_keywords (array of 5 words describing the visual mood for poster design), key_takeaway (one sentence insight), and lead_hook (a compelling reason why the audience should contact Marvice or visit Marvice page after reading this post).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze these trending topics from multiple niches and pick the best one for today's social media campaign. Categories covered: {{ JSON.stringify($json.categories_covered) }}. Topics: {{ JSON.stringify($json.trends) }}\"\n    }\n  ]\n}",
         "options": {}
       },
       "id": "ai-trend-analysis",
@@ -150,7 +150,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse the AI analysis response\nconst response = $input.first().json;\nlet analysisText = '';\n\nif (response.choices && response.choices[0]) {\n  analysisText = response.choices[0].message?.content || '';\n} else if (response.body) {\n  analysisText = typeof response.body === 'string' ? response.body : JSON.stringify(response.body);\n}\n\nlet analysis = {};\n\ntry {\n  // Extract JSON from the response\n  const jsonMatch = analysisText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    analysis = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  analysis = {\n    selected_topic: 'AI-Powered Digital Marketing Strategies for 2026',\n    content_niche: 'Digital Marketing',\n    why_trending: 'AI tools are transforming how businesses run marketing campaigns',\n    target_audience: 'Marketers, business owners, entrepreneurs, and agencies',\n    campaign_angle: 'How AI is reshaping digital marketing ROI in 2026',\n    hashtags: ['#DigitalMarketing', '#AIMarketing', '#MarketingTrends', '#SEO2026', '#ContentMarketing', '#SocialMediaMarketing', '#GrowthHacking', '#MarketingStrategy', '#AITools', '#BusinessGrowth'],\n    mood_keywords: ['professional', 'vibrant', 'data-driven', 'modern', 'inspiring'],\n    key_takeaway: 'AI-powered marketing tools are delivering 3x better engagement rates compared to traditional methods'\n  };\n}\n\nreturn [{\n  json: {\n    ...analysis,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// Parse the AI analysis response\nconst response = $input.first().json;\nlet analysisText = '';\n\nif (response.choices && response.choices[0]) {\n  analysisText = response.choices[0].message?.content || '';\n} else if (response.body) {\n  analysisText = typeof response.body === 'string' ? response.body : JSON.stringify(response.body);\n}\n\nlet analysis = {};\n\ntry {\n  // Extract JSON from the response\n  const jsonMatch = analysisText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    analysis = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  analysis = {\n    selected_topic: 'AI-Powered Digital Marketing Strategies for 2026',\n    content_niche: 'Digital Marketing',\n    why_trending: 'AI tools are transforming how businesses run marketing campaigns',\n    target_audience: 'Business owners, startups, marketers, and decision-makers looking for growth',\n    campaign_angle: 'Marvice reveals how AI is reshaping digital marketing ROI in 2026',\n    hashtags: ['#Marvice', '#DigitalMarketing', '#AIMarketing', '#MarketingTrends', '#SEO2026', '#ContentMarketing', '#SocialMediaMarketing', '#GrowthHacking', '#MarketingStrategy', '#BusinessGrowth'],\n    mood_keywords: ['professional', 'vibrant', 'data-driven', 'modern', 'trustworthy'],\n    key_takeaway: 'AI-powered marketing tools are delivering 3x better engagement rates compared to traditional methods',\n    lead_hook: 'Want Marvice to build your AI-powered marketing strategy? DM us or visit our page for a free consultation'\n  };\n}\n\nreturn [{\n  json: {\n    ...analysis,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "id": "parse-analysis",
       "name": "Parse AI Analysis",
@@ -167,7 +167,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.8,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert multi-niche social media content creator covering: AI & Technology, Digital Marketing & SEO, Web Development, Corporate Gifting, and Marketing Updates. Generate platform-specific posts for a social media campaign based on the given niche and topic. Tailor the tone and terminology to the specific niche. Return a JSON object with keys: linkedin_post (professional thought-leadership tone, 200-300 words with line breaks, include data points and actionable insights), instagram_caption (engaging with relevant emojis, 150 words max, hook in first line, include CTA), facebook_post (conversational and shareable, 150-200 words, ask a question to drive engagement), pinterest_description (SEO-rich, 100 words max with niche keywords for discoverability), poster_prompt (detailed DALL-E prompt for a visually stunning niche-specific campaign poster - include style, brand colors, modern typography, composition, relevant icons/illustrations for the niche, NO text overlay on the image).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create social media campaign content for:\\nContent Niche: {{ $json.content_niche }}\\nTopic: {{ $json.selected_topic }}\\nKey Takeaway: {{ $json.key_takeaway }}\\nAngle: {{ $json.campaign_angle }}\\nTarget Audience: {{ $json.target_audience }}\\nHashtags: {{ JSON.stringify($json.hashtags) }}\\nMood: {{ JSON.stringify($json.mood_keywords) }}\\nWhy Trending: {{ $json.why_trending }}\"\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.8,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are the official social media content creator for MARVICE — a company offering AI & Technology solutions, Digital Marketing & SEO services, Web Development, and Corporate Gifting. Every post must: (1) Position Marvice as the go-to expert in the niche, (2) Provide genuine value that makes people save/share the post, (3) End with a clear lead-generation CTA driving people to contact Marvice or visit the Marvice page. BRAND VOICE: Confident, knowledgeable, approachable, results-driven. Always mention 'Marvice' naturally 1-2 times per post. Return a JSON object with keys: linkedin_post (thought-leadership tone, 200-300 words, start with a bold hook or surprising stat, include 3 actionable bullet points, end with CTA like 'Follow Marvice for daily insights' or 'DM us to discuss your project', include line breaks for readability), instagram_caption (scroll-stopping first line as hook, engaging with relevant emojis, 150 words max, include value-packed tips, end with strong CTA: 'Save this for later', 'Follow @marvice for more', 'Link in bio for free consultation', include hashtags at end), facebook_post (conversational and shareable, 150-200 words, start with a question or relatable pain point, provide the insight, end with engagement question + Marvice CTA like 'Comment GROWTH if you want us to audit your strategy for free'), pinterest_description (SEO-rich, 100 words max, include keywords like 'Marvice', niche terms, 'tips', 'strategy', 'guide', 'how to', for maximum Pinterest search discoverability), poster_prompt (DALL-E prompt for a professional, modern campaign poster for brand Marvice - use clean corporate design, brand-friendly colors like deep blue, white, and accent gold/orange, modern sans-serif typography feel, relevant niche icons/illustrations, professional business aesthetic, NO text on the image as text will be overlaid separately).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create Marvice-branded social media campaign content for:\\nBrand: MARVICE\\nContent Niche: {{ $json.content_niche }}\\nTopic: {{ $json.selected_topic }}\\nKey Takeaway: {{ $json.key_takeaway }}\\nLead Hook: {{ $json.lead_hook }}\\nAngle: {{ $json.campaign_angle }}\\nTarget Audience: {{ $json.target_audience }}\\nHashtags: {{ JSON.stringify($json.hashtags) }}\\nMood: {{ JSON.stringify($json.mood_keywords) }}\\nWhy Trending: {{ $json.why_trending }}\\n\\nREMEMBER: Every post must naturally mention Marvice and end with a lead-gen CTA that drives DMs, follows, or page visits.\"\n    }\n  ]\n}",
         "options": {}
       },
       "id": "generate-content",
@@ -384,7 +384,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"board_id\": \"{{ $env.PINTEREST_BOARD_ID }}\",\n  \"media_source\": {\n    \"source_type\": \"image_url\",\n    \"url\": \"{{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\"\n  },\n  \"title\": \"{{ $('Parse AI Analysis').first().json.selected_topic }}\",\n  \"description\": \"{{ $('Prepare for Multi-Platform Posting').first().json.pinterest_description }}\",\n  \"alt_text\": \"Campaign poster for {{ $('Parse AI Analysis').first().json.selected_topic }}\"\n}",
+        "jsonBody": "={\n  \"board_id\": \"{{ $env.PINTEREST_BOARD_ID }}\",\n  \"media_source\": {\n    \"source_type\": \"image_url\",\n    \"url\": \"{{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\"\n  },\n  \"title\": \"Marvice | {{ $('Parse AI Analysis').first().json.selected_topic }}\",\n  \"description\": \"{{ $('Prepare for Multi-Platform Posting').first().json.pinterest_description }}\",\n  \"alt_text\": \"Marvice campaign poster - {{ $('Parse AI Analysis').first().json.selected_topic }}\"\n}",
         "options": {}
       },
       "id": "post-pinterest",
@@ -396,7 +396,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Collect results from all platform postings\nconst results = {\n  campaign_summary: {\n    topic: $('Parse AI Analysis').first().json.selected_topic || 'N/A',\n    content_niche: $('Parse AI Analysis').first().json.content_niche || 'General',\n    campaign_angle: $('Parse AI Analysis').first().json.campaign_angle || 'N/A',\n    key_takeaway: $('Parse AI Analysis').first().json.key_takeaway || '',\n    poster_generated: true,\n    platforms_posted: ['LinkedIn', 'Instagram', 'Facebook', 'Pinterest'],\n    timestamp: new Date().toISOString()\n  }\n};\n\nreturn [{ json: results }];"
+        "jsCode": "// Collect results from all platform postings\nconst results = {\n  campaign_summary: {\n    brand: 'Marvice',\n    topic: $('Parse AI Analysis').first().json.selected_topic || 'N/A',\n    content_niche: $('Parse AI Analysis').first().json.content_niche || 'General',\n    campaign_angle: $('Parse AI Analysis').first().json.campaign_angle || 'N/A',\n    key_takeaway: $('Parse AI Analysis').first().json.key_takeaway || '',\n    lead_hook: $('Parse AI Analysis').first().json.lead_hook || '',\n    poster_generated: true,\n    platforms_posted: ['LinkedIn', 'Instagram', 'Facebook', 'Pinterest'],\n    timestamp: new Date().toISOString()\n  }\n};\n\nreturn [{ json: results }];"
       },
       "id": "campaign-summary",
       "name": "Campaign Summary",
@@ -433,13 +433,16 @@
           "mappingMode": "defineBelow",
           "value": {
             "Date": "={{ $('Campaign Summary').first().json.campaign_summary.timestamp }}",
+            "Brand": "Marvice",
             "Content Niche": "={{ $('Campaign Summary').first().json.campaign_summary.content_niche }}",
             "Topic": "={{ $('Campaign Summary').first().json.campaign_summary.topic }}",
             "Campaign Angle": "={{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}",
             "Key Takeaway": "={{ $('Campaign Summary').first().json.campaign_summary.key_takeaway }}",
+            "Lead Hook / CTA": "={{ $('Campaign Summary').first().json.campaign_summary.lead_hook }}",
             "Platforms": "={{ $('Campaign Summary').first().json.campaign_summary.platforms_posted.join(', ') }}",
             "Poster URL": "={{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}",
-            "Status": "Published"
+            "Status": "Published",
+            "Leads Generated": "0"
           }
         },
         "options": {}
@@ -455,14 +458,14 @@
           "name": "Google Sheets OAuth2"
         }
       },
-      "notes": "Logs campaign details to a Google Sheet for tracking and analytics. Create a sheet with columns: Date, Content Niche, Topic, Campaign Angle, Key Takeaway, Platforms, Poster URL, Status."
+      "notes": "Logs Marvice campaign details for lead tracking. Create a sheet with columns: Date, Brand, Content Niche, Topic, Campaign Angle, Key Takeaway, Lead Hook / CTA, Platforms, Poster URL, Status, Leads Generated."
     },
     {
       "parameters": {
         "url": "=https://hooks.slack.com/services/{{ $env.SLACK_WEBHOOK_PATH }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"text\": \"Campaign Published!\\nNiche: {{ $('Campaign Summary').first().json.campaign_summary.content_niche }}\\nTopic: {{ $('Campaign Summary').first().json.campaign_summary.topic }}\\nAngle: {{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}\\nKey Takeaway: {{ $('Campaign Summary').first().json.campaign_summary.key_takeaway }}\\nPlatforms: LinkedIn, Instagram, Facebook, Pinterest\\nPoster: {{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\"\n}",
+        "jsonBody": "={\n  \"text\": \"MARVICE Campaign Published!\\n---\\nNiche: {{ $('Campaign Summary').first().json.campaign_summary.content_niche }}\\nTopic: {{ $('Campaign Summary').first().json.campaign_summary.topic }}\\nAngle: {{ $('Campaign Summary').first().json.campaign_summary.campaign_angle }}\\nKey Takeaway: {{ $('Campaign Summary').first().json.campaign_summary.key_takeaway }}\\nLead Hook: {{ $('Campaign Summary').first().json.campaign_summary.lead_hook }}\\nPlatforms: LinkedIn, Instagram, Facebook, Pinterest\\nPoster: {{ $('Prepare for Multi-Platform Posting').first().json.imageUrl }}\\n---\\nTrack leads in the Google Sheet!\"\n}",
         "options": {}
       },
       "id": "slack-notification",
