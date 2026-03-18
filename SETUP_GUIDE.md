@@ -29,7 +29,7 @@ Schedule Trigger → Fetch Trends → AI Analysis → Content Generation → Pos
 
 | Service | Purpose | How to Get |
 |---------|---------|------------|
-| **OpenAI API** | Content generation + DALL-E poster | https://platform.openai.com/api-keys |
+| **OpenAI API** | Content generation + DALL-E poster (via HTTP Request) | https://platform.openai.com/api-keys |
 | **Perplexity API** | Trend analysis | https://docs.perplexity.ai/ |
 | **ImgBB API** | Image hosting | https://api.imgbb.com/ |
 | **LinkedIn OAuth2** | LinkedIn posting | LinkedIn Developer Portal → Create App |
@@ -64,11 +64,12 @@ SLACK_WEBHOOK_PATH=T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
 
 ### Step 2: Configure Credentials
 
-#### OpenAI
+#### OpenAI (via HTTP Header Auth)
 1. In n8n, go to **Credentials** → **New Credential**
-2. Search for **OpenAI API**
-3. Enter your API key
-4. Save and note the credential ID
+2. Search for **HTTP Header Auth**
+3. Set **Name**: `Authorization`
+4. Set **Value**: `Bearer sk-your-openai-api-key`
+5. Save — this single credential is used by both the content generation and DALL-E poster nodes
 
 #### Perplexity AI
 1. Create an **HTTP Header Auth** credential
@@ -101,10 +102,14 @@ SLACK_WEBHOOK_PATH=T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
 
 ### Step 3: Update Credential References
 In the workflow, update the credential IDs in these nodes:
-- `Generate Platform Content (OpenAI)` → OpenAI credential
-- `Design Poster (DALL-E 3)` → OpenAI credential
+- `Generate Platform Content (OpenAI)` → HTTP Header Auth credential (Authorization: Bearer sk-xxx)
+- `Design Poster (DALL-E 3)` → Same HTTP Header Auth credential as above
+- `AI Trend Analysis (Perplexity)` → HTTP Header Auth credential (Authorization: Bearer pplx-xxx)
 - `Post to LinkedIn` → LinkedIn OAuth2 credential
+- `Post to Pinterest` → HTTP Header Auth credential (Authorization: Bearer pinterest-token)
 - `Log to Google Sheets` → Google Sheets OAuth2 credential
+
+**Note:** All AI nodes (OpenAI GPT-4o, DALL-E 3, Perplexity) use standard **HTTP Request** nodes instead of custom OpenAI nodes. This ensures compatibility with all n8n versions without needing to install extra community nodes.
 
 ### Step 4: Adjust Schedule
 The default schedule is Mon/Wed/Fri at 8:00 AM. To change:
