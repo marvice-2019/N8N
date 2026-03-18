@@ -1,85 +1,95 @@
-# Marvice - Social Media Lead Generation & Engagement Campaign
+# Marvice & Conxyou - Lead Gen, Blog & Engagement Campaign
 
 ## Purpose
 
-This n8n workflow is designed specifically for **Marvice** to:
-- **Generate leads** by positioning Marvice as a thought leader across multiple niches
-- **Drive engagement** (likes, comments, shares, saves, follows) on every post
-- **Build brand authority** in AI, Digital Marketing, Web Development & Corporate Gifting
-- **Auto-post** branded content with lead-gen CTAs to LinkedIn, Instagram, Facebook & Pinterest
+This n8n workflow runs **two brands** automatically:
+- **Marvice** — AI & Technology, Digital Marketing, Web Development
+- **Conxyou** — Corporate Gifting, business gifts, employee engagement
 
-Every post mentions **Marvice** and ends with a **call-to-action** driving DMs, page visits, or consultations.
+### What It Does
+- Auto-posts engaging content to **LinkedIn, Instagram, Facebook, Pinterest**
+- Auto-publishes a **full SEO blog post to WordPress** for every campaign
+- Sends **email notification** when campaign is live
+- Logs everything to **Google Sheets** for lead tracking
+- Smart branding: Marvice mentioned only sometimes (not every post), Conxyou always on gifting content
+- Every post includes a **"Comment to get the full blog"** CTA in the caption (NOT on the poster)
+
+---
+
+## Brand Rules
+
+| Niche | Brand | Mention Rule |
+|-------|-------|-------------|
+| **AI & Technology** | Marvice | Sometimes — varies between pure value posts and branded posts |
+| **Digital Marketing** | Marvice | Sometimes — not every time, keeps it natural |
+| **Web Development** | Marvice | Always mentioned |
+| **Corporate Gifting** | Conxyou | Always mentioned |
+| **Marketing Updates** | Marvice | Sometimes |
+
+The AI decides per-campaign whether to include the brand name (via `mention_brand: true/false`). When `false`, the post is pure value content with no brand mention — just insights and tips.
 
 ---
 
 ## Workflow Pipeline
 
 ```
-Schedule (Mon-Fri 8AM) ──┐
-Manual Trigger ──────────┤
-                         ▼
+Schedule (Mon-Fri 8AM) or Manual Trigger
+         ▼
     ┌─── Google Trends ───────────────────────┐
     ├─── AI & Tech News (RSS) ────────────────┤
-    ├─── Digital Marketing News (RSS) ────────┤── Aggregate Multi-Niche Trends
+    ├─── Digital Marketing News (RSS) ────────┤── Aggregate Trends
     ├─── Web Development News (RSS) ──────────┤
     └─── Corporate Gifting News (RSS) ────────┘
-                         ▼
-         Perplexity AI (pick highest lead-gen potential topic)
-                         ▼
-         OpenAI GPT-4o (Marvice-branded platform content + CTAs)
-                         ▼
-         DALL-E 3 (Marvice-branded poster in blue/white/gold)
-                         ▼
-         ImgBB (host image)
-                         ▼
+         ▼
+    Perplexity AI → Pick topic + assign brand (Marvice or Conxyou)
+         ▼
+    OpenAI GPT-4o → Platform posts + blog_content (800-1200 words)
+         ▼
+    DALL-E 3 → Clean poster (NO text, NO CTA on image)
+         ▼
+    ImgBB → Host image
+         ▼
     ┌────────┬───────────┬──────────┐
     ▼        ▼           ▼          ▼
  LinkedIn  Instagram  Facebook  Pinterest
- (thought   (visual    (engage   (SEO pins
-  leader)    + CTA)     + CTA)    + leads)
     └────────┴───────────┴──────────┘
-                         ▼
-         Google Sheets (lead tracking) → Slack (team notify)
+         ▼
+    Campaign Summary
+         ▼
+    ┌────────────────┬──────────────────┬──────────────────┐
+    ▼                ▼                  ▼
+ Google Sheets    WordPress Blog    Email Notification
+ (lead tracking)  (auto-publish)    (campaign summary)
 ```
 
 ---
 
-## How Marvice Gets Leads from Each Platform
+## Post CTAs (in captions, NOT on poster)
 
-| Platform | Lead-Gen Strategy | CTA Style |
-|----------|------------------|-----------|
-| **LinkedIn** | Thought-leadership posts with data + actionable insights | "Follow Marvice for daily insights" / "DM us to discuss your project" |
-| **Instagram** | Scroll-stopping hooks + value-packed tips + branded poster | "Save this for later" / "Follow @marvice" / "Link in bio for free consultation" |
-| **Facebook** | Relatable pain points + engagement questions | "Comment GROWTH if you want a free audit" / "Tag someone who needs this" |
-| **Pinterest** | SEO-rich pins with keywords for long-term discoverability | "Marvice | [Topic] guide" / drives traffic to Marvice page |
+Every social media caption includes engagement-driving CTAs:
 
----
+| Platform | Comment/Blog CTA |
+|----------|-----------------|
+| **LinkedIn** | "Comment below to get the detailed blog on this topic" |
+| **Instagram** | "Drop a comment and we'll send you the full breakdown" / "Save this" |
+| **Facebook** | "Comment for the full blog" / engagement question |
+| **Pinterest** | SEO description drives traffic to blog |
 
-## Content Niches & Marvice Service Mapping
-
-| Niche | Marvice Service | Lead Angle |
-|-------|----------------|------------|
-| **AI & Technology** | AI solutions, automation, AI consulting | "Let Marvice automate your business with AI" |
-| **Digital Marketing** | SEO, social media marketing, PPC, analytics | "Marvice can 3x your marketing ROI" |
-| **Web Development** | Websites, web apps, frontend/backend dev | "Need a website? Marvice builds conversion-ready sites" |
-| **Corporate Gifting** | Business gifts, branded merch, employee rewards | "Marvice handles corporate gifting at scale" |
-| **Marketing Updates** | Branding, growth strategy, viral campaigns | "Marvice is your growth partner" |
+The **poster image is always clean** — no text, no CTA overlaid on it.
 
 ---
 
-## Workflow Stages
+## New Features
 
-| Stage | Node(s) | Purpose |
-|-------|---------|---------|
-| 1. Trigger | Schedule (Mon-Fri 8AM) or Manual | Initiates the daily campaign |
-| 2. Research | Google Trends + 4 Niche RSS Feeds | Fetches trends across 5 content niches |
-| 3. Aggregate | Code Node | Merges all sources into unified topic list |
-| 4. Analysis | Perplexity AI | Selects topic with highest lead-gen potential for Marvice |
-| 5. Content | OpenAI GPT-4o (HTTP Request) | Generates Marvice-branded posts with CTAs |
-| 6. Design | DALL-E 3 (HTTP Request) | Creates Marvice-branded HD poster (blue/white/gold) |
-| 7. Host | ImgBB | Hosts poster with persistent URL |
-| 8. Publish | LinkedIn, Instagram, Facebook, Pinterest | Posts in parallel |
-| 9. Track | Google Sheets + Slack | Logs campaign with lead tracking columns |
+### Auto-Blog to WordPress
+- Generates 800-1200 word SEO blog post with H2/H3 headings
+- Auto-publishes to your WordPress site via REST API
+- Blog excerpt = key takeaway from the campaign
+
+### Email Notification (replaces Slack)
+- Sends HTML email when campaign is published
+- Includes: brand, topic, angle, lead hook, blog title, poster link
+- Uses SendGrid API (or swap for SMTP)
 
 ---
 
@@ -89,13 +99,15 @@ Manual Trigger ──────────┤
 
 | Service | Purpose | How to Get |
 |---------|---------|------------|
-| **OpenAI API** | Content generation + DALL-E poster (via HTTP Request) | https://platform.openai.com/api-keys |
-| **Perplexity API** | Trend analysis & topic selection | https://docs.perplexity.ai/ |
+| **OpenAI API** | Content + DALL-E poster + blog | https://platform.openai.com/api-keys |
+| **Perplexity API** | Trend analysis | https://docs.perplexity.ai/ |
 | **ImgBB API** | Image hosting | https://api.imgbb.com/ |
 | **LinkedIn OAuth2** | LinkedIn posting | LinkedIn Developer Portal |
 | **Facebook/Instagram** | FB & IG posting | Meta Developer Portal |
 | **Pinterest API** | Pinterest pinning | Pinterest Developer Portal |
-| **Google Sheets OAuth2** | Lead tracking & campaign log | Google Cloud Console |
+| **Google Sheets OAuth2** | Lead tracking | Google Cloud Console |
+| **WordPress** | Blog publishing | WordPress Admin → Users → Application Passwords |
+| **SendGrid API** | Email notification | https://sendgrid.com/ (or use SMTP) |
 
 ### Environment Variables
 
@@ -109,7 +121,9 @@ FACEBOOK_PAGE_ID=your_fb_page_id
 FACEBOOK_PAGE_ACCESS_TOKEN=your_fb_page_token
 PINTEREST_BOARD_ID=your_pinterest_board_id
 CAMPAIGN_LOG_SPREADSHEET_ID=your_google_sheet_id
-SLACK_WEBHOOK_PATH=T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+WORDPRESS_URL=https://yourdomain.com
+NOTIFICATION_EMAIL=your@email.com
+FROM_EMAIL=noreply@yourdomain.com
 ```
 
 ---
@@ -123,44 +137,28 @@ SLACK_WEBHOOK_PATH=T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
 ### Step 2: Configure Credentials
 
 #### OpenAI (HTTP Header Auth)
-1. **Credentials** → **New** → **HTTP Header Auth**
-2. Name: `Authorization` | Value: `Bearer sk-your-openai-key`
-3. Used by both content generation and DALL-E poster nodes
+- Name: `Authorization` | Value: `Bearer sk-your-openai-key`
 
 #### Perplexity AI (separate HTTP Header Auth)
-1. **Credentials** → **New** → **HTTP Header Auth**
-2. Name: `Authorization` | Value: `Bearer pplx-your-api-key`
+- Name: `Authorization` | Value: `Bearer pplx-your-api-key`
 
-#### LinkedIn
-1. Create LinkedIn App → request `w_member_social` scope
-2. Add **LinkedIn OAuth2** credential in n8n
+#### WordPress (HTTP Header Auth)
+1. WordPress Admin → Users → Application Passwords → Generate
+2. Create HTTP Header Auth: Name: `Authorization` | Value: `Basic base64(username:app_password)`
+3. To get base64: `echo -n "username:app_password" | base64`
 
-#### Facebook & Instagram
-1. Create Meta App → add Facebook Login + Instagram Graph API
-2. Generate long-lived Page Access Token
-3. Get Instagram Business Account ID
+#### SendGrid (HTTP Header Auth)
+- Name: `Authorization` | Value: `Bearer SG.your-sendgrid-api-key`
+- **Alternative**: Replace the SendGrid node with n8n's built-in "Send Email" node using SMTP
 
-#### Pinterest
-1. Create Pinterest App → generate access token with `pins:write`
-2. Create a board, note the board ID
-3. Add as HTTP Header Auth: `Authorization: Bearer your-token`
+#### LinkedIn, Facebook, Instagram, Pinterest, Google Sheets
+- Same as before (see credential setup in each node's notes)
 
-#### Google Sheets
-1. Enable Sheets API in Google Cloud Console
-2. Add **Google Sheets OAuth2** credential
-3. Create sheet with columns:
-   **Date | Brand | Content Niche | Topic | Campaign Angle | Key Takeaway | Lead Hook / CTA | Platforms | Poster URL | Status | Leads Generated**
+### Step 3: Google Sheet Columns
 
-### Step 3: Assign Credentials
+Create a sheet named "Campaign Log" with columns:
 
-| Node | Credential |
-|------|-----------|
-| Generate Platform Content (OpenAI) | HTTP Header Auth (OpenAI) |
-| Design Poster (DALL-E 3) | HTTP Header Auth (OpenAI) |
-| AI Trend Analysis (Perplexity) | HTTP Header Auth (Perplexity) |
-| Post to LinkedIn | LinkedIn OAuth2 |
-| Post to Pinterest | HTTP Header Auth (Pinterest) |
-| Log to Google Sheets | Google Sheets OAuth2 |
+**Date | Brand | Content Niche | Topic | Campaign Angle | Key Takeaway | Lead Hook / CTA | Blog Title | Platforms | Poster URL | Blog Published | Status | Leads Generated**
 
 ### Step 4: Activate
 1. **Save** → Toggle **Active**
@@ -168,40 +166,13 @@ SLACK_WEBHOOK_PATH=T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
 
 ---
 
-## Lead Tracking
-
-The Google Sheet automatically logs every campaign with a **"Leads Generated"** column (starts at 0). Update this manually or connect a form/webhook to track:
-
-| Metric | Where to Track |
-|--------|---------------|
-| DMs received | Update "Leads Generated" column weekly |
-| Page follows | Track follower growth per niche |
-| Comments with intent | "Comment GROWTH" / "Interested" responses |
-| Link clicks | Use UTM links in bio; track in Google Analytics |
-| Pinterest traffic | Pinterest Analytics → Marvice board |
-
----
-
-## Marvice Brand Guidelines in the Workflow
-
-| Element | Value |
-|---------|-------|
-| Brand Name | **Marvice** (mentioned 1-2x per post) |
-| Poster Colors | Deep blue, white, accent gold/orange |
-| Poster Style | Clean corporate, modern sans-serif, professional |
-| Voice | Confident, knowledgeable, approachable, results-driven |
-| CTA per platform | LinkedIn: "DM us" / Instagram: "Follow + save" / Facebook: "Comment keyword" / Pinterest: SEO title |
-
----
-
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| RSS feeds return empty | Google News RSS may rate-limit; add 2s delay |
-| DALL-E rate limit | Add a Wait node (30s) before poster generation |
-| Instagram 400 error | Verify Business Account ID and token permissions |
-| LinkedIn 403 error | Reauthorize OAuth; check w_member_social scope |
-| Pinterest 401 error | Regenerate access token; check pins:write scope |
-| OpenAI 401 error | Check HTTP Header Auth: `Authorization: Bearer sk-xxx` |
-| Posts don't mention Marvice | Check the system prompt in Generate Platform Content node |
+| Wrong brand on gifting posts | Parse AI Analysis enforces Conxyou for Corporate Gifting |
+| Marvice mentioned every time | Check `mention_brand` field — should be false sometimes for AI/Marketing |
+| CTA showing on poster | Poster prompt says "NO text on image" — check DALL-E prompt |
+| WordPress 401 error | Verify Application Password and base64 encoding |
+| Email not sending | Check SendGrid API key and FROM_EMAIL (must be verified sender) |
+| Blog content missing | Check Parse Generated Content node — blog_content field |
